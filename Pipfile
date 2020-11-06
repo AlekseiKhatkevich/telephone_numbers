@@ -11,6 +11,7 @@ djangorestframework = "*"
 python-dotenv = "*"
 psycopg2 = "*"
 aiohttp = "*"
+aiofiles = "*"
 
 [requires]
 python_version = "3.8"
