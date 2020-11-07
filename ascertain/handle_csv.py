@@ -1,16 +1,79 @@
 import asyncio
 from pathlib import Path
 from typing import Container, Iterable, Optional, Union
-
+import csv
 import aiofiles
+import itertools
 import aiohttp
 from aiohttp.client import ClientResponse
 from rest_framework import status
+from ascertain.models import TelephoneNumbersModel
+from psycopg2.extras import NumericRange
 
 from telephone_numbers import constants
 
+#multiprocessing
+class DatabaseCSVUpload:
+    """
+    """
+    def __init__(self,
+                 path: Union[Path, str] = Path('ascertain/csv_files'),
+                 encoding='utf-8',
+                 delimiter=';',
+                 ) -> None:
+        self.path = Path(path)
+        self.encoding = encoding
+        self.delimiter = delimiter
 
-class Download_CSV:
+    def get_csv_files(self):
+        """
+        """
+        return self.path.glob('*.csv')
+
+    def read_csv(self, file_path):
+        """
+        """
+        with file_path.open(newline='', encoding=self.encoding, errors='surrogateescape') as csv_file:
+            csv_reader = csv.DictReader(csv_file, delimiter=self.delimiter, quotechar='|')
+
+            yield from csv_reader
+
+    @staticmethod
+    def create_instance(row):
+        """
+        """
+        fields = {
+            'abc_or_def': int(row['АВС/ DEF']),
+            'numbers_range': NumericRange(
+                int(row['От']),
+                int(row['До']),
+                bounds='[]',
+            ),
+            'volume': int(row['Емкость']),
+            'operator': row['Оператор'],
+            'region': row['Регион'],
+        }
+
+        return TelephoneNumbersModel(**fields)
+
+    def write_csv_to_db(self, instance):
+        """
+        """
+        pass
+
+    def __call__(self, *args, **kwargs):
+        """
+        """
+        instances_gen_pool = []
+        for file in self.get_csv_files():
+            csv_generator = self.read_csv(file)
+            instances_gen = (self.create_instance(row) for row in csv_generator)
+            instances_gen_pool.append(instances_gen)
+
+        return itertools.chain(*instances_gen_pool)
+
+
+class DownloadCSV:
     """
     Скачивает CSV файлы с данными телефонных номеров.
     rossvyaz.gov.ru обновляет данные файлы каждый день в 12 ночи, изменяя 'etag', 'last-modified'

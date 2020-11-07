@@ -5,3 +5,4 @@ CSV_URLS = (
     'https://rossvyaz.gov.ru/data/ABC-8xx.csv',
     'https://rossvyaz.gov.ru/data/DEF-9xx.csv',
 )
+
