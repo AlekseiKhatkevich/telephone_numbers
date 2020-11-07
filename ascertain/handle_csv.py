@@ -1,18 +1,25 @@
 import asyncio
+import csv
+import itertools
 from pathlib import Path
 from typing import Container, Iterable, Optional, Union
-import csv
+
 import aiofiles
-import itertools
 import aiohttp
 from aiohttp.client import ClientResponse
-from rest_framework import status
-from ascertain.models import TelephoneNumbersModel
+from django.core.management.color import no_style
+from django.db import connection
 from psycopg2.extras import NumericRange
+from rest_framework import status
 
+from ascertain.models import TelephoneNumbersModel
 from telephone_numbers import constants
 
+
 #multiprocessing
+# Validation
+
+
 class DatabaseCSVUpload:
     """
     """
@@ -20,10 +27,14 @@ class DatabaseCSVUpload:
                  path: Union[Path, str] = Path('ascertain/csv_files'),
                  encoding='utf-8',
                  delimiter=';',
+                 batch_size=2000,
+                 model=TelephoneNumbersModel,
                  ) -> None:
         self.path = Path(path)
         self.encoding = encoding
         self.delimiter = delimiter
+        self.batch_size = batch_size
+        self.model = model
 
     def get_csv_files(self):
         """
@@ -38,8 +49,7 @@ class DatabaseCSVUpload:
 
             yield from csv_reader
 
-    @staticmethod
-    def create_instance(row):
+    def create_instance(self, row):
         """
         """
         fields = {
@@ -54,12 +64,27 @@ class DatabaseCSVUpload:
             'region': row['Регион'],
         }
 
-        return TelephoneNumbersModel(**fields)
+        return self.model(**fields)
 
-    def write_csv_to_db(self, instance):
+    def write_csv_to_db(self, instances):
         """
         """
-        pass
+        while True:
+            batch = list(itertools.islice(instances, self.batch_size))
+            if not batch:
+                break
+            self.model.objects.bulk_create(
+                batch,
+                ignore_conflicts=True,
+            )
+
+    def reset_pk(self):
+        """
+        """
+        sequence_sql = connection.ops.sequence_reset_sql(no_style(), [self.model, ])
+        with connection.cursor() as cursor:
+            for sql in sequence_sql:
+                cursor.execute(sql)
 
     def __call__(self, *args, **kwargs):
         """
@@ -67,10 +92,18 @@ class DatabaseCSVUpload:
         instances_gen_pool = []
         for file in self.get_csv_files():
             csv_generator = self.read_csv(file)
+            # noinspection PyTypeChecker
             instances_gen = (self.create_instance(row) for row in csv_generator)
             instances_gen_pool.append(instances_gen)
 
-        return itertools.chain(*instances_gen_pool)
+        instances_final_gen = itertools.chain(*instances_gen_pool)
+        self.model.objects.all().delete()
+        self.reset_pk()
+        self.write_csv_to_db(instances_final_gen)
+
+        count = TelephoneNumbersModel.objects.all().count()
+
+        return f'{count} записей в базе данных.'
 
 
 class DownloadCSV:

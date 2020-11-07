@@ -1,12 +1,7 @@
-import re
-
 from django.contrib.postgres.fields import IntegerRangeField
-from django.core.validators import RegexValidator
 from django.db import models
 from django.utils.functional import cached_property
 from psycopg2.extras import NumericRange
-
-from telephone_numbers import error_messages
 
 
 class TelephoneNumbersModel(models.Model):
@@ -15,21 +10,16 @@ class TelephoneNumbersModel(models.Model):
     """
     abc_or_def = models.PositiveSmallIntegerField(
         verbose_name='АВС/DEF',
-        validators=[
-            RegexValidator(
-                re.compile(r'^[\d]{3}$'),
-                *error_messages.ABC_OR_DEF_LENGTH,
-            ), ]
     )
     numbers_range = IntegerRangeField(
         verbose_name='Диапазон номеров без АВС/DEF.'
     )
-    volume = models.PositiveSmallIntegerField(
+    volume = models.PositiveIntegerField(
         verbose_name='Емкость диапазона номеров',
     )
     operator = models.CharField(
         verbose_name='Наименование оператора связи',
-        max_length=50,
+        max_length=150,
     )
     region = models.CharField(
         verbose_name='Местоположение оператора связи',
@@ -51,11 +41,6 @@ class TelephoneNumbersModel(models.Model):
 
     def __repr__(self):
         return f'{self.pk=} ~ {self.abc_or_def=} ~ {self.numbers_range=}'
-
-    def save(self, fc=True, *args, **kwargs):
-        if fc:
-            self.full_clean()
-        super().save(*args, **kwargs)
 
     # todo
     @cached_property
