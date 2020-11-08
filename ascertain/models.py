@@ -1,4 +1,5 @@
 from django.contrib.postgres.fields import IntegerRangeField
+from django.contrib.postgres.indexes import GistIndex
 from django.db import models
 from django.utils.functional import cached_property
 from psycopg2.extras import NumericRange
@@ -33,8 +34,12 @@ class TelephoneNumbersModel(models.Model):
     class Meta:
         verbose_name = 'Диапазон телефонных номеров'
         verbose_name_plural = 'Диапазоны телефонных номеров'
-        unique_together = ('abc_or_def', 'numbers_range',)
         required_db_vendor = 'postgresql'
+        indexes = (
+            GistIndex(
+                fields=('abc_or_def', 'numbers_range',),
+                fillfactor=100,
+            ),)
 
     def __str__(self):
         return f'ABC/DEF {self.abc_or_def}, range {self.numbers_range}'
@@ -50,7 +55,7 @@ class TelephoneNumbersModel(models.Model):
 
 test = dict(
     abc_or_def=301,
-    numbers_range=NumericRange(2110000, 2129999, bounds='[]',),
+    numbers_range=NumericRange(2110000, 2129999, bounds='[]', ),
     volume=20000,
     operator='ПАО "Ростелеком"',
     region='г. Улан-Удэ|Республика Бурятия',
