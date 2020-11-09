@@ -142,3 +142,17 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
 
 STATIC_URL = '/static/'
+
+#  Настройки Redis.
+CACHES = {
+    'default': {
+        'BACKEND': 'django_redis.cache.RedisCache',
+        'LOCATION': fr'redis://{os.getenv("REDIS_LOCATION")}/{os.getenv("REDIS_DEFAULT_DB")}',
+        'OPTIONS': {
+            'CLIENT_CLASS': 'django_redis.client.DefaultClient',
+            'SOCKET_CONNECT_TIMEOUT': 5,
+            'SOCKET_TIMEOUT': 5,
+            'PARSER_CLASS': 'redis.connection.HiredisParser',
+        }
+    }
+}

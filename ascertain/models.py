@@ -3,12 +3,15 @@ from django.contrib.postgres.indexes import GistIndex
 from django.db import models
 from django.utils.functional import cached_property
 from psycopg2.extras import NumericRange
+from ascertain.managers import TelephoneNumbersModelManager
 
 
 class TelephoneNumbersModel(models.Model):
     """
     Модель представляет базу телефонных номеров по операторам связи.
     """
+    objects = TelephoneNumbersModelManager()
+
     abc_or_def = models.PositiveSmallIntegerField(
         verbose_name='АВС/DEF',
     )
@@ -25,10 +28,6 @@ class TelephoneNumbersModel(models.Model):
     region = models.CharField(
         verbose_name='Местоположение оператора связи',
         max_length=100,
-    )
-    update_date = models.DateTimeField(
-        verbose_name='Время последнего обновления данных',
-        auto_now=True,
     )
 
     class Meta:
