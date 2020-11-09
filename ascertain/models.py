@@ -2,7 +2,7 @@ from django.contrib.postgres.fields import IntegerRangeField
 from django.contrib.postgres.indexes import GistIndex
 from django.db import models
 from django.utils.functional import cached_property
-from psycopg2.extras import NumericRange
+
 from ascertain.managers import TelephoneNumbersModelManager
 
 
@@ -52,10 +52,3 @@ class TelephoneNumbersModel(models.Model):
         pass
 
 
-test = dict(
-    abc_or_def=301,
-    numbers_range=NumericRange(2110000, 2129999, bounds='[]', ),
-    volume=20000,
-    operator='ПАО "Ростелеком"',
-    region='г. Улан-Удэ|Республика Бурятия',
-)

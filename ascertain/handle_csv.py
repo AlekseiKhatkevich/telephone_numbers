@@ -2,15 +2,16 @@ import asyncio
 import csv
 import itertools
 from pathlib import Path
-from typing import Container, Iterable, Optional, Union, Generator, Iterator
+from typing import Container, Generator, Iterable, Iterator, Optional, Union
 
 import aiofiles
 import aiohttp
 from aiohttp.client import ClientResponse
 from django.core.management.color import no_style
-from django.db import DatabaseError, InterfaceError, connection, transaction, models
+from django.db import DatabaseError, InterfaceError, connection, models, transaction
 from psycopg2.extras import NumericRange
 from rest_framework import status
+from yarl import URL
 
 from ascertain.models import TelephoneNumbersModel
 from telephone_numbers import constants
@@ -149,7 +150,7 @@ class DownloadCSV:
     """
 
     def __init__(self,
-                 urls: Iterable = constants.CSV_URLS,
+                 urls: Iterable[URL] = constants.CSV_URLS,
                  path: Union[Path, str] = Path('ascertain/csv_files'),
                  chunk_size: int = 100000,
                  response_timeout: Optional[Union[float, int]] = 60,
@@ -159,16 +160,16 @@ class DownloadCSV:
         self.chunk_size = chunk_size
         self.response_timeout = response_timeout
 
-    def get_path(self, url: str) -> Path:
+    def get_path(self, url: URL) -> Path:
         """
         Создает путь к записываемому csv файлу путем конкатенации 'path' и последней части 'url''.
         'ascertain/csv_files' + 'ABC-3xx.csv' = 'ascertain/csv_files/ABC-3xx.csv'
         """
-        return self.path / url.split('/')[-1]
+        return self.path / url.name
 
     async def download_one_csv(self,
                                session: aiohttp.ClientSession,
-                               url: str,
+                               url: URL,
                                ) -> ClientResponse:
         """
         Получает содержимое CSV файла с сервера и записывает его в файл.
@@ -181,7 +182,7 @@ class DownloadCSV:
 
             return response
 
-    async def write_one_file(self, response: ClientResponse, url: str) -> None:
+    async def write_one_file(self, response: ClientResponse, url: URL) -> None:
         """
         Записывает полезную нагрузку респонса в файл потоково кусками по 'chunk_size'.
         """

@@ -14,16 +14,12 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-load_dotenv()
-
 # Определяем текущее окружение
-ENVIRONMENT = os.getenv('environment', None)
-
-assert ENVIRONMENT is not None, 'Нужно указать переменную окружения "ENVIRONMENT"'
+ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
+load_dotenv(Path(fr'telephone_numbers/{ENVIRONMENT}.env'))
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
-
 
 # Quick-start development settings - unsuitable for production
 # See https://docs.djangoproject.com/en/3.1/howto/deployment/checklist/
@@ -144,10 +140,15 @@ USE_TZ = True
 STATIC_URL = '/static/'
 
 #  Настройки Redis.
+REDIS_LOCATION = os.getenv('REDIS_LOCATION')
+REDIS_DEFAULT_DB = os.getenv('REDIS_DEFAULT_DB')
+REDIS_CELERY_DB = os.getenv('REDIS_CELERY_DB')
+REDIS_CELERY_RESULT_BACKEND_DB = os.getenv('REDIS_CELERY_RESULT_BACKEND_DB')
+
 CACHES = {
     'default': {
         'BACKEND': 'django_redis.cache.RedisCache',
-        'LOCATION': fr'redis://{os.getenv("REDIS_LOCATION")}/{os.getenv("REDIS_DEFAULT_DB")}',
+        'LOCATION': fr'redis://{REDIS_LOCATION}/{REDIS_DEFAULT_DB}',
         'OPTIONS': {
             'CLIENT_CLASS': 'django_redis.client.DefaultClient',
             'SOCKET_CONNECT_TIMEOUT': 5,
