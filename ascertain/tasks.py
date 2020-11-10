@@ -6,7 +6,7 @@ from rest_framework import status
 from yarl import URL
 
 from ascertain.handle_csv import DatabaseCSVUpload, DownloadCSV
-from telephone_numbers import constants
+from telephone_numbers import constants, custom_exceptions
 
 
 @shared_task(
@@ -25,19 +25,26 @@ def download_csv_files(self: Task, urls_list: Iterable[URL] = constants.CSV_URLS
     то соответсвующие файлы не были загруженны и сохранены DownloadCSV. В данном случае эти файлы
     загружаются повторно через определенный интервал 'default_retry_delay'
     ('max_retries' попыток в сумме).
+    Все исключения передаются из DownloadCSV и обраюатываются сдесь.
     """
     downloader = DownloadCSV(urls_list)
 
     responses = downloader()
-    bad_responses = [*filter(lambda response: response.status != status.HTTP_200_OK, responses)]
 
+    exceptions = [*filter(lambda response: isinstance(response, Exception), responses)]
+    if exceptions:
+        self.retry()
+
+    bad_responses = [*filter(lambda response: response.status != status.HTTP_200_OK, responses)]
     if bad_responses:
         urls_to_retry = [response.url for response in bad_responses]
         self.retry([urls_to_retry, ],)
 
 
 @shared_task(
-    autoretry_for=(OperationalError,),
+    autoretry_for=(
+            OperationalError,
+    ),
     default_retry_delay=60 * 60,
     max_retries=4,
     soft_time_limit=5 * 60,

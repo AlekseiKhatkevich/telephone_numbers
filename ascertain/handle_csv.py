@@ -2,7 +2,7 @@ import asyncio
 import csv
 import itertools
 from pathlib import Path
-from typing import Container, Coroutine, Generator, Iterable, Iterator, Optional, Union
+from typing import Container, Coroutine, Iterable, Iterator, Optional, Union
 
 import aiofiles
 import aiohttp
@@ -16,6 +16,7 @@ from yarl import URL
 
 from ascertain.models import TelephoneNumbersModel
 from telephone_numbers import constants
+from telephone_numbers.custom_exceptions import EmptyFolder
 
 
 class DatabaseCSVUpload:
@@ -35,12 +36,17 @@ class DatabaseCSVUpload:
         self.batch_size = batch_size
         self.model = model
 
-    def get_csv_files(self) -> Generator[Path, None, None]:
+    def get_csv_files(self) -> tuple:
         """
         Возвращает генератор с объектами pathlib.Path содержащими путь к CSV файлам
         в папке 'path'.
+        Если в папке нет ни одного CSV файла то возбуждает исключение.
         """
-        return self.path.glob('*.csv')
+        files_to_upload = tuple(self.path.glob('*.csv'))
+        if not files_to_upload:
+            raise EmptyFolder()
+
+        return files_to_upload
 
     def read_csv(self, file_path: Path) -> Iterator[dict]:
         """
@@ -217,9 +223,13 @@ class DownloadCSV:
     def __call__(self, *args, **kwargs) -> tuple:
         """
         Запускает весь процесс.
+        0 - Проверяем есть ли папка для сохранения файлов. Если нет - то создаем ее.
+        (Привычка добавлять папки для сохранения в гитигнор и потом часами выискивать причину.
+        Особенно бывает весело с флагом return_exceptions = True)
         1 - Ассинхронно загружаем csv файлы.
         2 - Ассинхронно записываем их на диск.
         """
+        Path(self.path).mkdir(parents=True, exist_ok=True)
         mutual_response = asyncio.run(self.download_all_csv())
 
         return mutual_response
