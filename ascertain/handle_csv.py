@@ -2,11 +2,12 @@ import asyncio
 import csv
 import itertools
 from pathlib import Path
-from typing import Container, Generator, Iterable, Iterator, Optional, Union
+from typing import Container, Coroutine, Generator, Iterable, Iterator, Optional, Union
 
 import aiofiles
 import aiohttp
 from aiohttp.client import ClientResponse
+from asgiref.sync import sync_to_async
 from django.core.management.color import no_style
 from django.db import DatabaseError, InterfaceError, connection, models, transaction
 from psycopg2.extras import NumericRange
@@ -153,14 +154,15 @@ class DownloadCSV:
                  urls: Iterable[URL] = constants.CSV_URLS,
                  path: Union[Path, str] = Path('ascertain/csv_files'),
                  chunk_size: int = 100000,
-                 response_timeout: Optional[Union[float, int]] = 60,
+                 response_timeout: Optional[Union[float, int]] = 2 * 60,
                  ) -> None:
         self.urls = urls
         self.path = Path(path)
         self.chunk_size = chunk_size
         self.response_timeout = response_timeout
 
-    def get_path(self, url: URL) -> Path:
+    @sync_to_async
+    def get_path(self, url: URL) -> Coroutine[URL, None, URL]:
         """
         Создает путь к записываемому csv файлу путем конкатенации 'path' и последней части 'url''.
         'ascertain/csv_files' + 'ABC-3xx.csv' = 'ascertain/csv_files/ABC-3xx.csv'
@@ -186,7 +188,7 @@ class DownloadCSV:
         """
         Записывает полезную нагрузку респонса в файл потоково кусками по 'chunk_size'.
         """
-        async with aiofiles.open(self.get_path(url), mode='wb') as file:
+        async with aiofiles.open(await self.get_path(url), mode='wb') as file:
 
             while True:
                 chunk = await response.content.read(self.chunk_size)
@@ -203,7 +205,8 @@ class DownloadCSV:
             mutual_response = await asyncio.gather(
                 *[
                     asyncio.wait_for(
-                        self.download_one_csv(session, url), self.response_timeout
+                        self.download_one_csv(session, url),
+                        self.response_timeout
                     ) for url in self.urls
                 ],
                 return_exceptions=True,

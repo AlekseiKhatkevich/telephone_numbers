@@ -1,5 +1,9 @@
-from celery import shared_task
+from typing import Iterable
+
+from celery import Task, shared_task
+from django.db.utils import OperationalError
 from rest_framework import status
+from yarl import URL
 
 from ascertain.handle_csv import DatabaseCSVUpload, DownloadCSV
 from telephone_numbers import constants
@@ -13,8 +17,14 @@ from telephone_numbers import constants
     soft_time_limit=5 * 60,
     time_limit=10 * 60,
 )
-def download_csv_files(self, urls_list=constants.CSV_URLS):
+def download_csv_files(self: Task, urls_list: Iterable[URL] = constants.CSV_URLS) -> None:
     """
+    Задача по загрузке CSV файлов на сервер.
+    Загружаем все файлы с помощью DownloadCSV.
+    Если один или более респонсов полученных с удаленного сервера имеют статус != 200,
+    то соответсвующие файлы не были загруженны и сохранены DownloadCSV. В данном случае эти файлы
+    загружаются повторно через определенный интервал 'default_retry_delay'
+    ('max_retries' попыток в сумме).
     """
     downloader = DownloadCSV(urls_list)
 
@@ -26,9 +36,17 @@ def download_csv_files(self, urls_list=constants.CSV_URLS):
         self.retry([urls_to_retry, ],)
 
 
-@shared_task
-def upload_csv_to_db(*args, **kwargs):
+@shared_task(
+    autoretry_for=(OperationalError,),
+    default_retry_delay=60 * 60,
+    max_retries=4,
+    soft_time_limit=5 * 60,
+    time_limit=10 * 60,
+)
+def upload_csv_to_db(*args, **kwargs) -> None:
     """
+    Задача загружает данные из сохраненных CSV файлов в базу данных с помощью DatabaseCSVUpload.
+    Задача должна запускаться после успешного выполнения задачи 'download_csv_files'.
     """
     uploader = DatabaseCSVUpload()
     uploader()
