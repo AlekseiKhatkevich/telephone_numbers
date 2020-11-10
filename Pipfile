@@ -15,6 +15,9 @@ aiofiles = "*"
 celery = {extras = ["redis"], version = "*"}
 django-redis = "*"
 hiredis = "*"
+pytest-django = "*"
+pytest-randomly = "*"
+pytest-dotenv = "*"
 
 [requires]
 python_version = "3.8"
