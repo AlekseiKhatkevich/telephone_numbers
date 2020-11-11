@@ -17,8 +17,8 @@ from dotenv import load_dotenv
 # Загрузка переменных окружения
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
-load_dotenv(Path(fr'telephone_numbers/default.env'), verbose=True)
-load_dotenv(Path(fr'telephone_numbers/{ENVIRONMENT}.env'), verbose=True)
+load_dotenv(Path(fr'telephone_numbers/env/default.env'), verbose=True)
+load_dotenv(Path(fr'telephone_numbers/env/{ENVIRONMENT}.env'), verbose=True)
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent

@@ -21,7 +21,7 @@ from telephone_numbers.custom_exceptions import EmptyFolder
 
 class DatabaseCSVUpload:
     """
-    Зашружает данные из CSV файлов в 'path' в таблицу, предварительно удалив старые данные.
+    Загружает данные из CSV файлов находящихся в 'path' в таблицу, предварительно удалив старые данные.
     """
     def __init__(self,
                  path: Union[Path, str] = Path('ascertain/csv_files'),
@@ -38,9 +38,9 @@ class DatabaseCSVUpload:
 
     def get_csv_files(self) -> tuple:
         """
-        Возвращает генератор с объектами pathlib.Path содержащими путь к CSV файлам
+        Возвращает контейнер с объектами pathlib.Path содержащими путь к CSV файлам
         в папке 'path'.
-        Если в папке нет ни одного CSV файла то возбуждает исключение.
+        Если в папке нет ни одного CSV файла, то возбуждает исключение.
         """
         files_to_upload = tuple(self.path.glob('*.csv'))
         if not files_to_upload:
@@ -51,7 +51,7 @@ class DatabaseCSVUpload:
     def read_csv(self, file_path: Path) -> Iterator[dict]:
         """
         Читает один CSV файл, возвращает итератор строк этого файла, где каждая строка это словарь
-        ключами которого являются поля хэедера CSV, а значениями - данные из соответвующих колонок.
+        ключами которого являются поля хэдера CSV, а значениями - данные из соответствующих колонок.
         Пример:
             {
             'АВС/ DEF': '900',
@@ -101,7 +101,7 @@ class DatabaseCSVUpload:
 
     def reset_pk(self):
         """
-        Сюрасывает счетчик PK модели в начальное положение.
+        Сбрасывает счетчик PK модели в начальное положение.
         """
         sequence_sql = connection.ops.sequence_reset_sql(no_style(), [self.model, ])
         with connection.cursor() as cursor:
@@ -114,14 +114,14 @@ class DatabaseCSVUpload:
         ход1
         1 - Для каждого CSV файла из 'path' получаем генератор строк.
         2 - Для каждой строки создаем экземпляр класса модели.
-        3 - Создаем генератор экземпларов класса модели.
+        3 - Создаем генератор экземпляров класса модели.
         4 - Помещаем данный генератор в пул генераторов.
         5 - Создаем общий генератор всех прошедших итераций.
         ход2
         Транзакционно:
-        1 -  Удалем все данные из таблицы.
-        2 - Сбрасываем счетчик PK
-        3 - Записываем все данные в таблицу
+        1 -  Удаляем все данные из таблицы.
+        2 - Сбрасываем счетчик PK.
+        3 - Записываем все данные в таблицу.
         4 - Коммит данных или откат до сейвпойнта.
         """
         instances_gen_pool = []
@@ -140,11 +140,11 @@ class DatabaseCSVUpload:
                 self.write_csv_to_db(instances_final_gen)
         except (DatabaseError, InterfaceError) as err:
             return f'При записи данных возникли исключения. Таблица {self.model._meta.db_table}' \
-                   f'возвращенна к предыдущему состоянию. Данные об исключении:' \
+                   f'возвращена к предыдущему состоянию. Данные об исключении:' \
                    f' \n {str(err)}'
         else:
             count = self.model.objects.all().count()
-            return f'Созданно {count} записей в базе данных.'
+            return f'Создано {count} записей в базе данных.'
 
 
 class DownloadCSV:
@@ -181,7 +181,7 @@ class DownloadCSV:
                                ) -> ClientResponse:
         """
         Получает содержимое CSV файла с сервера и записывает его в файл.
-        В случае любого статуса за исключением 200 рейзит HttpProcessingError.
+        В случае любого статуса за исключением 200 вызывает исключение HttpProcessingError.
         """
         async with session.get(url) as response:
 
@@ -226,8 +226,8 @@ class DownloadCSV:
         0 - Проверяем есть ли папка для сохранения файлов. Если нет - то создаем ее.
         (Привычка добавлять папки для сохранения в гитигнор и потом часами выискивать причину.
         Особенно бывает весело с флагом return_exceptions = True)
-        1 - Ассинхронно загружаем csv файлы.
-        2 - Ассинхронно записываем их на диск.
+        1 - Асинхронно загружаем csv файлы.
+        2 - Асинхронно записываем их на диск.
         """
         Path(self.path).mkdir(parents=True, exist_ok=True)
         mutual_response = asyncio.run(self.download_all_csv())
