@@ -2,7 +2,7 @@ from pathlib import Path
 
 import pytest
 from psycopg2.extras import NumericRange
-
+from django.conf import settings
 #pytest_plugins = ('celery.contrib.pytest', )
 
 
@@ -30,3 +30,6 @@ def path_to_test_csv_folder() -> Path:
     return Path(r'ascertain\tests\csv')
 
 
+@pytest.fixture(scope='function')
+def invalid_db_settings(settings):
+    settings.DATABASES['default']['PORT'] = 228

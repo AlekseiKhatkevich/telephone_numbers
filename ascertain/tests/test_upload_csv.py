@@ -28,6 +28,7 @@ class TestUploadCSVtoDatabasePositive(APITestCase):
         """
         handler = DatabaseCSVUpload(self.path, delimiter=',')
         handler()
+        print(Path(__file__).parent.absolute())
 
         self.assertEqual(
             TelephoneNumbersModel.objects.all().count(),

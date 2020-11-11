@@ -22,5 +22,10 @@ app.autodiscover_tasks()
 def debug_task(self):
     print(f'Request: {self.request!r}')
 
+
+@app.task
+def mul(x, y):
+    return x * y
+
 # celery -A telephone_numbers worker --loglevel=INFO -E
 # celery -A telephone_numbers  beat --loglevel=INFO --pidfile=

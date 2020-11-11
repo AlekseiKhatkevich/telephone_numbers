@@ -1,16 +1,19 @@
+from unittest.mock import patch
+
+import celery.exceptions
 import pytest
 from yarl import URL
+
+from ascertain.handle_csv import DatabaseCSVUpload, DownloadCSV
 from ascertain.tasks import download_csv_files, upload_csv_to_db
-import celery.exceptions
 from telephone_numbers import constants
-from unittest.mock import patch
-from ascertain.handle_csv import DownloadCSV
 
 
 class TestDownloadCSVFilesCeleryTask:
     """
     Тесты задачи Celery 'download_csv_files' по загрузке CSV файлов.
     """
+
     @patch.object(DownloadCSV, '__call__')
     def test_success(self, handler_class):
         """
@@ -33,9 +36,22 @@ class TestDownloadCSVFilesCeleryTask:
         1) Респонс != 200
         2) Exception
         """
-        wrong_url = URL('https://rossvyaz.gov.ru/data/does-not-exsts.csv')
-
         with pytest.raises(celery.exceptions.Retry):
             # noinspection PyTypeChecker
             download_csv_files([wrong_url, ])
+
+
+class TestUploadCSVtoDBCeleryTask:
+    """
+    Тесты задачи Celery 'upload_csv_to_db'.
+    """
+
+    @patch.object(DatabaseCSVUpload, '__call__')
+    def test_success(self, handler_class):
+        """
+        Вызывается ли класс "DatabaseCSVUpload" который непосредственно занимается загрузкой
+        данных с CSV файлов в базу данных.
+        """
+        upload_csv_to_db()
+        handler_class.assert_called()
 
