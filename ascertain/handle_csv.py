@@ -43,6 +43,7 @@ class DatabaseCSVUpload:
         Если в папке нет ни одного CSV файла, то возбуждает исключение.
         """
         files_to_upload = tuple(self.path.glob('*.csv'))
+
         if not files_to_upload:
             raise EmptyFolder()
 
