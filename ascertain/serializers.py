@@ -7,8 +7,9 @@ class WhoIsOperatorSerializer(serializers.ModelSerializer):
     """
     Сериалайзер для "WhoIsOperatorDetailView".
     """
-# Еще вернуть номер
+    number = serializers.ReadOnlyField()
+
     class Meta:
         model = models.TelephoneNumbersModel
-        fields = ('operator', 'region', )
+        fields = ('number', 'operator', 'region',)
         read_only_fields = fields
