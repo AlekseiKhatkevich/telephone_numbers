@@ -6,7 +6,7 @@ from rest_framework import status
 from yarl import URL
 
 from ascertain.handle_csv import DatabaseCSVUpload, DownloadCSV
-from telephone_numbers import constants, custom_exceptions
+from telephone_numbers import constants
 
 
 @shared_task(
@@ -31,10 +31,12 @@ def download_csv_files(self: Task, urls_list: Iterable[URL] = constants.CSV_URLS
 
     responses = downloader()
 
+    # Повтор задачи при наличии исключений переданных из DownloadCSV.
     exceptions = [*filter(lambda response: isinstance(response, Exception), responses)]
     if exceptions:
         self.retry()
 
+    # Повтор задачи при наличии не 200х респонсов переданных из DownloadCSV.
     bad_responses = [*filter(lambda response: response.status != status.HTTP_200_OK, responses)]
     if bad_responses:
         urls_to_retry = [response.url for response in bad_responses]
@@ -42,9 +44,7 @@ def download_csv_files(self: Task, urls_list: Iterable[URL] = constants.CSV_URLS
 
 
 @shared_task(
-    autoretry_for=(
-            OperationalError,
-    ),
+    autoretry_for=(OperationalError,),
     default_retry_delay=60 * 60,
     max_retries=4,
     soft_time_limit=5 * 60,

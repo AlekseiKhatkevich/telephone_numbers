@@ -14,14 +14,14 @@ class TestDownloadCSVFilesCeleryTask:
     Тесты задачи Celery 'download_csv_files' по загрузке CSV файлов.
     """
 
-    @patch.object(DownloadCSV, '__call__')
+    @patch.object(DownloadCSV, '__call__', autospec=True)
     def test_success(self, handler_class):
         """
         Тест того, вызывается ли класс "DownloadCSV" который и занимается загрузкой и сохранением
         CSV файлов.
         """
         download_csv_files(constants.CSV_URLS)
-        handler_class.assert_called()
+        handler_class.assert_called_once()
 
     @pytest.mark.parametrize(
         'wrong_url',
@@ -46,12 +46,12 @@ class TestUploadCSVtoDBCeleryTask:
     Тесты задачи Celery 'upload_csv_to_db'.
     """
 
-    @patch.object(DatabaseCSVUpload, '__call__')
+    @patch.object(DatabaseCSVUpload, '__call__', autospec=True)
     def test_success(self, handler_class):
         """
         Вызывается ли класс "DatabaseCSVUpload" который непосредственно занимается загрузкой
         данных с CSV файлов в базу данных.
         """
         upload_csv_to_db()
-        handler_class.assert_called()
+        handler_class.assert_called_once()
 
