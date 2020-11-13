@@ -1,6 +1,7 @@
 import asyncio
 import csv
 import itertools
+import logging
 from pathlib import Path
 from typing import Container, Coroutine, Iterable, Iterator, Optional, Union
 
@@ -20,6 +21,8 @@ from telephone_numbers import constants
 from telephone_numbers.custom_exceptions import EmptyFolder
 
 redis_client = django_redis.get_redis_connection()
+
+logger = logging.getLogger('handle_csv')
 
 
 class DatabaseCSVUpload:
@@ -48,7 +51,11 @@ class DatabaseCSVUpload:
         files_to_upload = tuple(self.path.glob('*.csv'))
 
         if not files_to_upload:
-            raise EmptyFolder()
+            err = EmptyFolder()
+            logger.error(err.message)
+            raise err
+
+        logger.info(f'Найдены файлы {files_to_upload}')
 
         return files_to_upload
 
@@ -68,6 +75,8 @@ class DatabaseCSVUpload:
         """
         with file_path.open(newline='', encoding=self.encoding, errors='surrogateescape') as csv_file:
             csv_reader = csv.DictReader(csv_file, delimiter=self.delimiter, quotechar='|')
+
+            logger.info(f'CSV файл {csv_file} открыт и создан его итератор.')
 
             yield from csv_reader
 
@@ -103,6 +112,8 @@ class DatabaseCSVUpload:
                         ignore_conflicts=True,
                     )
 
+        logger.info('Все инстансы модели записаны в базу данных.')
+
     def reset_pk(self):
         """
         Сбрасывает счетчик PK модели в начальное положение.
@@ -111,6 +122,8 @@ class DatabaseCSVUpload:
         with connection.cursor() as cursor:
             for sql in sequence_sql:
                 cursor.execute(sql)
+
+        logger.info('Счетчик РК колонки ID сброшен в ноль.')
 
     def __call__(self, *args, **kwargs) -> str:
         """
@@ -129,6 +142,8 @@ class DatabaseCSVUpload:
         4 - Коммит данных или откат до сейвпойнта.
         5 - В случае успеха очищаем кеш респонсов вью "WhoIsOperatorDetailView".
         """
+        logger.info('Начата процедура записи CSV файлов в базу данных.')
+
         instances_gen_pool = []
         for file in self.get_csv_files():
             csv_generator = self.read_csv(file)
@@ -144,13 +159,20 @@ class DatabaseCSVUpload:
                 self.reset_pk()
                 self.write_csv_to_db(instances_final_gen)
                 transaction.on_commit(lambda: redis_client.flushdb())
+                transaction.on_commit(lambda: logger.info('Кеш Редиса очищен от закешированных респонсов.'))
         except (DatabaseError, InterfaceError) as err:
-            return f'При записи данных возникли исключения. Таблица {self.model._meta.db_table}' \
+            message = f'При записи данных возникли исключения. Таблица {self.model._meta.db_table}' \
                    f'возвращена к предыдущему состоянию. Данные об исключении:' \
                    f' \n {str(err)}'
+            logger.error(message)
+
+            return message
         else:
             count = self.model.objects.all().count()
-            return f'Создано {count} записей в базе данных.'
+            message = f'Создано {count} записей в базе данных.'
+            logger.info(message)
+
+            return message
 
 
 class DownloadCSV:
@@ -161,7 +183,6 @@ class DownloadCSV:
      не имеет смысла. Все равно 'etag' каждый раз новый и мы реально не знаем обновился ли файл и 'etag'
      или просто 'etag'.
     """
-
     def __init__(self,
                  urls: Iterable[URL] = constants.CSV_URLS,
                  path: Union[Path, str] = Path('ascertain/csv_files'),
@@ -192,7 +213,12 @@ class DownloadCSV:
         async with session.get(url) as response:
 
             if response.status == status.HTTP_200_OK:
+                logger.info(f'{url} респонс {response.status}.')
                 await asyncio.create_task(self.write_one_file(response, url))
+            else:
+                logger.warning(
+                    f'При попытке скачать CSV файл по адресу {url} был получен респонс {response.status}.'
+                )
 
             return response
 
@@ -200,7 +226,8 @@ class DownloadCSV:
         """
         Записывает полезную нагрузку респонса в файл потоково кусками по 'chunk_size'.
         """
-        async with aiofiles.open(await self.get_path(url), mode='wb') as file:
+        file_path = await self.get_path(url)
+        async with aiofiles.open(file_path, mode='wb') as file:
 
             while True:
                 chunk = await response.content.read(self.chunk_size)
@@ -208,6 +235,8 @@ class DownloadCSV:
                     break
                 else:
                     await file.write(chunk)
+
+        logger.info(f'Файл {file_path} сохранен на диск.')
 
     async def download_all_csv(self) -> Container:
         """
@@ -235,8 +264,12 @@ class DownloadCSV:
         1 - Асинхронно загружаем csv файлы.
         2 - Асинхронно записываем их на диск.
         """
+        logger.info('Запущен процесс загрузки CSV файлов на диск.')
         Path(self.path).mkdir(parents=True, exist_ok=True)
         mutual_response = asyncio.run(self.download_all_csv())
+        logger.info(f'В итоге от событийного цикла получены следующие респонсы или исключения:'
+                    f'{mutual_response}')
+        logger.info('Завершен процесс загрузки CSV файлов на диск.')
 
         return mutual_response
 

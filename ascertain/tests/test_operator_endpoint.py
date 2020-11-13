@@ -68,7 +68,7 @@ class TestOperatorEndpointNegative:
         Тестирование ситуации когда прислан правильный MSISDN, но данного телефонного номера нет
         в базе данных.
         """
-        number_not_in_db = 79052685555
+        number_not_in_db = 71111111111
 
         response = client.get(
             reverse('operator', args=(number_not_in_db,)),
