@@ -23,7 +23,6 @@ DEBUG = bool(int(os.getenv('DEBUG')))
 
 ALLOWED_HOSTS = ['127.0.0.1', 'localhost', '0.0.0.0', ]
 
-
 # Application definition
 
 INSTALLED_APPS = [
@@ -71,7 +70,6 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'telephone_numbers.wsgi.application'
 
-
 # Database
 # https://docs.djangoproject.com/en/3.1/ref/settings/#databases
 
@@ -91,7 +89,6 @@ DATABASES = {
     },
 }
 
-
 # Password validation
 # https://docs.djangoproject.com/en/3.1/ref/settings/#auth-password-validators
 
@@ -110,7 +107,6 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
-
 # Internationalization
 # https://docs.djangoproject.com/en/3.1/topics/i18n/
 
@@ -123,7 +119,6 @@ USE_I18N = True
 USE_L10N = True
 
 USE_TZ = True
-
 
 # Static files (CSS, JavaScript, Images)
 # https://docs.djangoproject.com/en/3.1/howto/static-files/
@@ -161,3 +156,81 @@ REST_FRAMEWORK = {
         'rest_framework.parsers.MultiPartParser',
     ),
 }
+
+# Logging settings
+LOGFILES_DIR = Path(r'logs')
+
+LOGGING = {
+    'version': 1,
+    'disable_existing_loggers': False,
+    'handlers': {
+        'console': {
+            'class': 'logging.StreamHandler',
+            'level': 'DEBUG',
+            'filters': ['require_debug_true'],
+        },
+        'file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGFILES_DIR / 'logfile.log',
+            'delay': True,
+            'maxBytes': 10 ** 6,
+            'backupCount': 2,
+            'formatter': 'verbose',
+            'level': 'WARNING',
+            'encoding': 'UTF-8',
+        },
+        'security_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGFILES_DIR / 'security_logfile.log',
+            'delay': True,
+            'maxBytes': 10 ** 3,
+            'backupCount': 2,
+            'formatter': 'verbose',
+            'level': 'WARNING',
+            'encoding': 'UTF-8',
+        },
+        'csv_handle_file': {
+            'class': 'logging.handlers.RotatingFileHandler',
+            'filename': LOGFILES_DIR / 'csv_handle_logfile.log',
+            'delay': True,
+            'maxBytes': 10 ** 6,
+            'backupCount': 2,
+            'formatter': 'verbose',
+            'level': 'INFO',
+            'encoding': 'UTF-8',
+        },
+    },
+    'loggers': {
+        'django': {
+            'handlers': ['file', 'console', ],
+            'propagate': True,
+            'level': 'WARNING',
+        },
+        'django.security': {
+            'handlers': ['security_file', ],
+            'propagate': True,
+            'level': 'WARNING',
+        },
+        'handle_csv': {
+            'handlers': ['csv_handle_file', ],
+            'propagate': True,
+            'level': 'INFO',
+        },
+    },
+    'formatters': {
+        'verbose': {
+            'format': '{levelname} || {asctime} || {module} || {message}',
+            'style': '{',
+        },
+        'simple': {
+            'format': '{levelname} {message}',
+            'style': '{',
+        },
+    },
+    'filters': {
+        'require_debug_true': {
+            '()': 'django.utils.log.RequireDebugTrue',
+        }, },
+}
+
+DJANGO_DB_LOGGER_ENABLE_FORMATTER = True

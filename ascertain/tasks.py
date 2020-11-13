@@ -1,3 +1,4 @@
+import logging
 from typing import Iterable
 
 from celery import Task, shared_task
@@ -7,6 +8,8 @@ from yarl import URL
 
 from ascertain.handle_csv import DatabaseCSVUpload, DownloadCSV
 from telephone_numbers import constants
+
+logger = logging.getLogger('handle_csv')
 
 
 @shared_task(
@@ -34,12 +37,17 @@ def download_csv_files(self: Task, urls_list: Iterable[URL] = constants.CSV_URLS
     # Повтор задачи при наличии исключений переданных из DownloadCSV.
     exceptions = [*filter(lambda response: isinstance(response, Exception), responses)]
     if exceptions:
+        logger.warning(f'Задача {self} поставлена на повторное выполнение из-за исключений {exceptions}.')
         self.retry()
 
     # Повтор задачи при наличии не 200х респонсов переданных из DownloadCSV.
     bad_responses = [*filter(lambda response: response.status != status.HTTP_200_OK, responses)]
     if bad_responses:
         urls_to_retry = [response.url for response in bad_responses]
+        logger.warning(
+            f'Задача {self} поставлена на повторное выполнение из-за респонсов не равных 200,'
+            f'а именно - {bad_responses}.'
+        )
         self.retry([urls_to_retry, ],)
 
 

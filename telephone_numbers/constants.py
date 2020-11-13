@@ -1,6 +1,5 @@
 from yarl import URL
 
-
 # Урлы csv файлов на сайте 'rossvyaz.gov.ru'
 CSV_URLS = (
     URL('https://rossvyaz.gov.ru/data/ABC-3xx.csv'),
