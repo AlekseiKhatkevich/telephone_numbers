@@ -6,6 +6,7 @@ from typing import Container, Coroutine, Iterable, Iterator, Optional, Union
 
 import aiofiles
 import aiohttp
+import django_redis
 from aiohttp.client import ClientResponse
 from asgiref.sync import sync_to_async
 from django.core.management.color import no_style
@@ -17,6 +18,8 @@ from yarl import URL
 from ascertain.models import TelephoneNumbersModel
 from telephone_numbers import constants
 from telephone_numbers.custom_exceptions import EmptyFolder
+
+redis_client = django_redis.get_redis_connection()
 
 
 class DatabaseCSVUpload:
@@ -124,6 +127,7 @@ class DatabaseCSVUpload:
         2 - Сбрасываем счетчик PK.
         3 - Записываем все данные в таблицу.
         4 - Коммит данных или откат до сейвпойнта.
+        5 - В случае успеха очищаем кеш респонсов вью "WhoIsOperatorDetailView".
         """
         instances_gen_pool = []
         for file in self.get_csv_files():
@@ -139,6 +143,7 @@ class DatabaseCSVUpload:
                 self.model.objects.all().delete()
                 self.reset_pk()
                 self.write_csv_to_db(instances_final_gen)
+                transaction.on_commit(lambda: redis_client.flushdb())
         except (DatabaseError, InterfaceError) as err:
             return f'При записи данных возникли исключения. Таблица {self.model._meta.db_table}' \
                    f'возвращена к предыдущему состоянию. Данные об исключении:' \

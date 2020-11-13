@@ -1,10 +1,13 @@
+from django.utils.decorators import method_decorator
+from django.views.decorators.cache import cache_page
 from rest_framework import generics
 from rest_framework.exceptions import NotFound, ValidationError
 
 from ascertain.serializers import WhoIsOperatorSerializer
-from telephone_numbers import error_messages
+from telephone_numbers import constants, error_messages
 
 
+@method_decorator(cache_page(constants.DEFAULT_CACHE_TTL), name='get')
 class WhoIsOperatorDetailView(generics.RetrieveAPIView):
     """
     Вью для возврата респонса с оператором определенным по MSISDN.

@@ -1,7 +1,6 @@
 from django.contrib.postgres.fields import IntegerRangeField
 from django.contrib.postgres.indexes import GistIndex
 from django.db import models
-from django.utils.functional import cached_property
 
 from ascertain.managers import TelephoneNumbersModelManager
 
@@ -46,9 +45,5 @@ class TelephoneNumbersModel(models.Model):
     def __repr__(self):
         return f'{self.pk=} ~ {self.abc_or_def=} ~ {self.numbers_range=}'
 
-    # todo
-    @cached_property
-    def get_absolute_url(self):
-        pass
 
 

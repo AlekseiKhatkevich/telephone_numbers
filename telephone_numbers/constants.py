@@ -9,3 +9,5 @@ CSV_URLS = (
     URL('https://rossvyaz.gov.ru/data/DEF-9xx.csv'),
 )
 
+# TTL кеша единственной вью.
+DEFAULT_CACHE_TTL = 60 * 60 * 24

@@ -1,8 +1,7 @@
-import tempfile
 from pathlib import Path
 
+import pytest
 from django.db.models import Min
-from rest_framework.test import APITestCase
 
 from ascertain.handle_csv import DatabaseCSVUpload
 from ascertain.models import TelephoneNumbersModel
@@ -10,75 +9,47 @@ from telephone_numbers import error_messages
 from telephone_numbers.custom_exceptions import EmptyFolder
 
 
-class TestUploadCSVtoDatabasePositive(APITestCase):
+@pytest.mark.django_db
+def test_path():
     """
-    Позитивный тест класса "DatabaseCSVUpload" отвечающего за загрузку данных из CSV файлов
-    в базу данных.
+    Тест класса "DatabaseCSVUpload". При вызове должен считать все CSV файлы в заданной папке и
+    записать данные из них в таблицу.
     """
-    maxDiff = None
+    path = Path(r'ascertain\tests\csv')
+    handler = DatabaseCSVUpload(path, delimiter=',')
+    handler()
 
-    @classmethod
-    def setUpTestData(cls):
-        cls.path = Path(r'ascertain\tests\csv')
+    assert TelephoneNumbersModel.objects.all().count() == 9
+    #  проверяем сбросился ли счетчик рк.
+    assert TelephoneNumbersModel.objects.aggregate(pk__min=Min('pk'))['pk__min'] == 1
 
-    def test_class(self):
-        """
-        Тест класса "DatabaseCSVUpload". При вызове должен считать все CSV файлы в заданной папке и
-        записать данные из них в таблицу.
-        """
-        handler = DatabaseCSVUpload(self.path, delimiter=',')
+
+@pytest.mark.django_db
+def test_get_csv_files_empty_folder(tmp_path):
+    """
+    Тестируем будет ли вызвано исключение "EmptyFolder" в случае попытки чтения CSV
+    файлов из паки где их нет.
+    """
+    with pytest.raises(EmptyFolder, match=error_messages.EMPTY_FOLDER.message):
+        handler = DatabaseCSVUpload(tmp_path, delimiter=',')
         handler()
-        print(Path(__file__).parent.absolute())
-
-        self.assertEqual(
-            TelephoneNumbersModel.objects.all().count(),
-            9,
-        )
-        #  проверяем сбросился ли счетчик рк.
-        self.assertEqual(
-            TelephoneNumbersModel.objects.aggregate(pk__min=Min('pk'))['pk__min'],
-            1,
-        )
 
 
-class TestUploadCSVtoDatabaseNegative(APITestCase):
+@pytest.mark.django_db
+def test_cant_write_to_db():
     """
-    Негативный тест класса "DatabaseCSVUpload" отвечающего за загрузку данных из CSV файлов
-    в базу данных.
+    Тестируем будут ли сохранены старые данные в базе данных при неудачной попытке записать новые.
     """
-    maxDiff = None
+    path = Path(r'ascertain\tests\csv')
+    #  Записываем корректные данные в БД.
+    handler_correct = DatabaseCSVUpload(path, delimiter=',')
+    handler_correct()
+    original = list(TelephoneNumbersModel.objects.all().values())
 
-    @classmethod
-    def setUpTestData(cls):
-        cls.path = Path(r'ascertain\tests\csv')
+    # А теперь данные которые вызовут IntegrityError.
+    path = Path(r'ascertain\tests\wrong_csv')
+    handler_incorrect = DatabaseCSVUpload(path, delimiter=',')
+    handler_incorrect()
+    restored = list(TelephoneNumbersModel.objects.all().values())
 
-    def test_get_csv_files_empty_folder(self):
-        """
-        Тестируем будет ли вызвано исключение "EmptyFolder" в случае попытки чтения CSV
-        файлов из паки где их нет.
-        """
-        with self.assertRaisesMessage(EmptyFolder, error_messages.EMPTY_FOLDER.message):
-            with tempfile.TemporaryDirectory() as temp_dir:
-                handler = DatabaseCSVUpload(temp_dir, delimiter=',')
-                handler()
-
-    def test_cant_write_to_db(self):
-        """
-        Тестируем будут ли сохранены старые данные в базе данных при неудачной попытке записать
-        новые.
-        """
-        #  Записываем корректные данные в БД.
-        handler_correct = DatabaseCSVUpload(self.path, delimiter=',')
-        handler_correct()
-        original = list(TelephoneNumbersModel.objects.all().values())
-
-        # А теперь данные которые вызовут IntegrityError.
-        path = Path(r'ascertain\tests\wrong_csv')
-        handler_incorrect = DatabaseCSVUpload(path, delimiter=',')
-        handler_incorrect()
-        restored = list(TelephoneNumbersModel.objects.all().values())
-
-        self.assertListEqual(
-            original,
-            restored,
-        )
+    assert original == restored

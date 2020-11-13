@@ -85,7 +85,7 @@ class TestOperatorEndpointNegative:
         находится данный телефонный номер.
         """
         # Дублируем существующую запись.
-        correct_msisdn_data_in_db.pk = 1
+        correct_msisdn_data_in_db.pk += 1
         correct_msisdn_data_in_db.save()
 
         response = client.get(
