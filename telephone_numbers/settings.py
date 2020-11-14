@@ -77,10 +77,15 @@ DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.postgresql',
         'HOST': os.getenv('DB_HOST'),
+        #'HOST': 'db',
         'PORT': int(os.getenv('DB_PORT')),
+        #'PORT': 5432,
         'USER': os.getenv('DB_USER'),
+        #'USER': 'postgres',
         'PASSWORD': os.getenv('DB_PASSWORD'),
+        #'PASSWORD': '1q2w3e',
         'NAME': os.getenv('DB_NAME'),
+        #'NAME': 'postgres',
         'CONN_MAX_AGE': None,
         'TEST': {
             'NAME': 'mobile_db_tests',
