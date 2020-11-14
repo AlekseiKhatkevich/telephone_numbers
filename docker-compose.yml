@@ -1,5 +1,3 @@
-# Telephone Numbers project Docker-compose file
-
 version: '3.8'
 
 volumes:
@@ -15,15 +13,23 @@ services:
       - ./telephone_numbers/env/docker.env
     volumes:
       - .:/code
-    ports:
-      - 8000:8000
-#    expose:
-#      - 8000
+#    ports:
+#      - 8000:8000
+    expose:
+      - 8000
     depends_on:
       - db
       - redis
       - celery
       - celery-beat
+    restart: always
+
+  nginx:
+    build: ./nginx
+    ports:
+      - 8000:80
+    depends_on:
+      - web
     restart: always
 
   db:
@@ -38,6 +44,7 @@ services:
           published: 5433
           protocol: tcp
           mode: host
+      command: -c track_commit_timestamp=on
 
   redis:
     image: redis:6.0.9-alpine3.12
@@ -83,9 +90,8 @@ services:
 
   flower:
     image: mher/flower:0.9.5
-    environment:
-      - CELERY_BROKER_URL=redis://redis:6379/11
-      - FLOWER_PORT=8888
+    env_file:
+      - ./telephone_numbers/env/flower.env
     depends_on:
       - redis
       - celery
