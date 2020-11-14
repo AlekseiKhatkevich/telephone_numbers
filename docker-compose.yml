@@ -21,9 +21,10 @@ services:
 #      - 8000
     depends_on:
       - db
-     # - redis
+      - redis
 #      - celery
 #      - celery-beat
+    restart: always
 
   db:
       image: postgres:13-alpine
@@ -38,7 +39,6 @@ services:
           protocol: tcp
           mode: host
 
-
   redis:
     image: redis:6.0.9-alpine3.12
     command: redis-server
@@ -52,4 +52,49 @@ services:
     restart: always
     environment:
       - REDIS_REPLICATION_MODE=master
+
+  celery:
+    build: .
+    command: celery -A telephone_numbers worker --loglevel=INFO -E
+    env_file:
+      - ./telephone_numbers/env/docker.env
+    restart: always
+    environment:
+      - C_FORCE_ROOT=1
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - redis
+    hostname: celery-main
+
+  celery-beat:
+    build: .
+    command: celery -A telephone_numbers  beat --loglevel=INFO --pidfile=
+    env_file:
+      - ./telephone_numbers/env/docker.env
+    restart: always
+    volumes:
+      - .:/code
+    depends_on:
+      - db
+      - redis
+    hostname: celery-beat
+
+  flower:
+    image: mher/flower:0.9.5
+    environment:
+      - CELERY_BROKER_URL=redis://redis:6379/11
+      - FLOWER_PORT=8888
+    depends_on:
+      - redis
+      - celery
+      - celery-beat
+    restart: always
+    ports:
+      - target: 8888
+        published: 8888
+        protocol: tcp
+        mode: host
+
 

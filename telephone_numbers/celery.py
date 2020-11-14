@@ -27,5 +27,4 @@ def debug_task(self):
 def mul(x, y):
     return x * y
 
-# celery -A telephone_numbers worker --loglevel=INFO -E
-# celery -A telephone_numbers  beat --loglevel=INFO --pidfile=
+

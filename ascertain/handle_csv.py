@@ -242,7 +242,9 @@ class DownloadCSV:
         """
         Запускает загрузку и сохранение на диск всех файлов.
         """
-        async with aiohttp.ClientSession() as session:
+        async with aiohttp.ClientSession(
+                connector=aiohttp.TCPConnector(verify_ssl=False),
+        ) as session:
             mutual_response = await asyncio.gather(
                 *[
                     asyncio.wait_for(
