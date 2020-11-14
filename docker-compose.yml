@@ -9,8 +9,8 @@ volumes:
 services:
   web:
     build: .
-    command: python /code/manage.py runserver 0.0.0.0:8000
-    #command: gunicorn series.wsgi:application --config ./gunicorn.conf.py
+    #command: python /code/manage.py runserver 0.0.0.0:8000
+    command: gunicorn telephone_numbers.wsgi:application --config ./gunicorn.conf.py
     env_file:
       - ./telephone_numbers/env/docker.env
     volumes:
@@ -22,8 +22,8 @@ services:
     depends_on:
       - db
       - redis
-#      - celery
-#      - celery-beat
+      - celery
+      - celery-beat
     restart: always
 
   db:
