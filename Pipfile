@@ -9,16 +9,16 @@ verify_ssl = true
 django = "*"
 djangorestframework = "*"
 python-dotenv = "*"
-psycopg2 = "*"
-aiohttp = "*"
 aiofiles = "*"
 celery = {extras = ["redis"], version = "*"}
 django-redis = "*"
-hiredis = "*"
 pytest-django = "*"
 pytest-randomly = "*"
 pytest-dotenv = "*"
 drf-ujson2 = "*"
+aiohttp = "*"
+psycopg2 = "*"
+hiredis = "*"
 
 [requires]
 python_version = "3.8"
