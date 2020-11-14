@@ -35,7 +35,6 @@ class TestOperatorEndpointPositive:
     """
     Позитивные тесты эндпойнта 'operator/<msisdn:msisdn>/ GET'.
     """
-
     def test_response(self, client, correct_msisdn_data_in_db, django_assert_num_queries, correct_msisdn):
         """
         Тестируем положительный респонс.
@@ -62,12 +61,18 @@ class TestOperatorEndpointNegative:
     """
     Негативные тесты эндпойнта 'operator/<msisdn:msisdn>/ GET'.
     """
+    DUMMY_CACHE = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    }
 
-    def test_404(self, client):
+    def test_404(self, client, settings):
         """
         Тестирование ситуации когда прислан правильный MSISDN, но данного телефонного номера нет
         в базе данных.
         """
+        settings.CACHES = self.DUMMY_CACHE
         number_not_in_db = 71111111111
 
         response = client.get(
@@ -79,11 +84,12 @@ class TestOperatorEndpointNegative:
         assert response.status_code == status.HTTP_404_NOT_FOUND
         assert response.data['detail'] == error_messages.NUMBER_NOT_FOUND.message
 
-    def test_multiple_objects_returned(self, client, correct_msisdn_data_in_db, correct_msisdn):
+    def test_multiple_objects_returned(self, client, correct_msisdn_data_in_db, correct_msisdn, settings):
         """
         Тестируем ситуацию когда в базе есть 2 или более записей в диапазонах которых
         находится данный телефонный номер.
         """
+        settings.CACHES = self.DUMMY_CACHE
         # Дублируем существующую запись.
         correct_msisdn_data_in_db.pk += 1
         correct_msisdn_data_in_db.save()

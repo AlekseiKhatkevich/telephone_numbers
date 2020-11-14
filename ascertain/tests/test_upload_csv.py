@@ -10,12 +10,12 @@ from telephone_numbers.custom_exceptions import EmptyFolder
 
 
 @pytest.mark.django_db
-def test_path():
+def test_files_upload():
     """
     Тест класса "DatabaseCSVUpload". При вызове должен считать все CSV файлы в заданной папке и
     записать данные из них в таблицу.
     """
-    path = Path(r'ascertain\tests\csv')
+    path = Path('ascertain/csv_test_files/correct')
     handler = DatabaseCSVUpload(path, delimiter=',')
     handler()
 
@@ -40,14 +40,14 @@ def test_cant_write_to_db():
     """
     Тестируем будут ли сохранены старые данные в базе данных при неудачной попытке записать новые.
     """
-    path = Path(r'ascertain\tests\csv')
+    path = Path('ascertain/csv_test_files/correct')
     #  Записываем корректные данные в БД.
     handler_correct = DatabaseCSVUpload(path, delimiter=',')
     handler_correct()
     original = list(TelephoneNumbersModel.objects.all().values())
 
     # А теперь данные которые вызовут IntegrityError.
-    path = Path(r'ascertain\tests\wrong_csv')
+    path = Path('ascertain/csv_test_files/incorrect')
     handler_incorrect = DatabaseCSVUpload(path, delimiter=',')
     handler_incorrect()
     restored = list(TelephoneNumbersModel.objects.all().values())
