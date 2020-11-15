@@ -5,7 +5,7 @@ from ascertain import models
 
 class WhoIsOperatorSerializer(serializers.ModelSerializer):
     """
-    Сериалайзер для "WhoIsOperatorDetailView".
+    Сериалайзер для вью "WhoIsOperatorDetailView".
     """
     number = serializers.ReadOnlyField()
 

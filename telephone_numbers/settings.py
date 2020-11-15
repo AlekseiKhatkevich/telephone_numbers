@@ -3,7 +3,8 @@ from pathlib import Path
 
 from dotenv import load_dotenv
 
-# Загрузка переменных окружения
+# Загрузка переменных окружения. Сначала загружаются дефолтные переменные, затем переменные согласно
+# текущего окружения(test, docker, etc).
 ENVIRONMENT = os.getenv('ENVIRONMENT', 'development')
 
 load_dotenv(Path(fr'telephone_numbers/env/default.env'), verbose=True)
@@ -125,7 +126,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 
-# pre-deploy
+# pre-deploy-checks
 SECURE_HSTS_SECONDS = 60
 SECURE_SSL_REDIRECT = False
 SESSION_COOKIE_SECURE = True

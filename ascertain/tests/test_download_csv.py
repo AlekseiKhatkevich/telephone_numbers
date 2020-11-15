@@ -13,7 +13,7 @@ class TestDownloadCSVPositive:
     Позитивный тест класса "DownloadCSV" отвечающего за загрузку CSV файлов из интернета на
     локальную машину.
     """
-    urls = (constants.CSV_URLS[-1], )
+    urls = (constants.CSV_URLS[-1],)
 
     @staticmethod
     def is_csv(infile):

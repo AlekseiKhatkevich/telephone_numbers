@@ -116,7 +116,7 @@ class DatabaseCSVUpload:
 
     def reset_pk(self):
         """
-        Сбрасывает счетчик PK модели в начальное положение.
+        Сбрасывает счетчик PK модели в начальное положение(в ноль обычно).
         """
         sequence_sql = connection.ops.sequence_reset_sql(no_style(), [self.model, ])
         with connection.cursor() as cursor:
@@ -129,14 +129,14 @@ class DatabaseCSVUpload:
         """
         Запускает процесс загрузки данных из CSV файлов в таблицу.
         ход1
-        1 - Для каждого CSV файла из 'path' получаем генератор строк.
+        1 - Для каждого CSV файла из 'path' получаем итератор строк.
         2 - Для каждой строки создаем экземпляр класса модели.
         3 - Создаем генератор экземпляров класса модели.
         4 - Помещаем данный генератор в пул генераторов.
         5 - Создаем общий генератор всех прошедших итераций.
         ход2
         Транзакционно:
-        1 -  Удаляем все данные из таблицы.
+        1 - Удаляем все данные из таблицы.
         2 - Сбрасываем счетчик PK.
         3 - Записываем все данные в таблицу.
         4 - Коммит данных или откат до сейвпойнта.
@@ -180,8 +180,8 @@ class DownloadCSV:
     Скачивает CSV файлы с данными телефонных номеров.
     rossvyaz.gov.ru обновляет данные файлы каждый день в 12 ночи, изменяя 'etag', 'last-modified'
     (проверял лично) и пр. Поэтому при загрузке CSV в базу по ночам раз в сутки клиентское кеширование
-     не имеет смысла. Все равно 'etag' каждый раз новый и мы реально не знаем обновился ли файл и 'etag'
-     или просто 'etag'.
+    не имеет смысла. Все равно 'etag' каждый раз новый и мы реально не знаем обновился ли файл и 'etag'
+    или просто 'etag'.
     """
     def __init__(self,
                  urls: Iterable[URL] = constants.CSV_URLS,
@@ -193,6 +193,16 @@ class DownloadCSV:
         self.path = Path(path)
         self.chunk_size = chunk_size
         self.response_timeout = response_timeout
+
+    @staticmethod
+    @sync_to_async
+    def async_logger(level, msg):
+        """
+        Псевдо-ассинхронный логгер.
+        """
+        level = logging.getLevelName(level.upper())
+
+        return logger.log(level=level, msg=msg)
 
     @sync_to_async
     def get_path(self, url: URL) -> Coroutine[URL, None, URL]:
@@ -208,16 +218,16 @@ class DownloadCSV:
                                ) -> ClientResponse:
         """
         Получает содержимое CSV файла с сервера и записывает его в файл.
-        В случае любого статуса за исключением 200 вызывает исключение HttpProcessingError.
         """
         async with session.get(url) as response:
 
             if response.status == status.HTTP_200_OK:
-                logger.info(f'{url} респонс {response.status}.')
+                await self.async_logger('info', f'{url} респонс {response.status}.')
                 await asyncio.create_task(self.write_one_file(response, url))
             else:
-                logger.warning(
-                    f'При попытке скачать CSV файл по адресу {url} был получен респонс {response.status}.'
+                await self.async_logger(
+                    'warning',
+                    f'При попытке скачать CSV файл по адресу {url} был получен респонс {response.status}.',
                 )
 
             return response
@@ -236,7 +246,7 @@ class DownloadCSV:
                 else:
                     await file.write(chunk)
 
-        logger.info(f'Файл {file_path} сохранен на диск.')
+        await self.async_logger('info', f'Файл {file_path} сохранен на диск.')
 
     async def download_all_csv(self) -> Container:
         """
@@ -261,8 +271,6 @@ class DownloadCSV:
         """
         Запускает весь процесс.
         0 - Проверяем есть ли папка для сохранения файлов. Если нет - то создаем ее.
-        (Привычка добавлять папки для сохранения в гитигнор и потом часами выискивать причину.
-        Особенно бывает весело с флагом return_exceptions = True)
         1 - Асинхронно загружаем csv файлы.
         2 - Асинхронно записываем их на диск.
         """

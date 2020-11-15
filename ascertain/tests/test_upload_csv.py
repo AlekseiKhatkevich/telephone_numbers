@@ -28,7 +28,7 @@ def test_files_upload():
 def test_get_csv_files_empty_folder(tmp_path):
     """
     Тестируем будет ли вызвано исключение "EmptyFolder" в случае попытки чтения CSV
-    файлов из паки где их нет.
+    файлов из папки где их нет.
     """
     with pytest.raises(EmptyFolder, match=error_messages.EMPTY_FOLDER.message):
         handler = DatabaseCSVUpload(tmp_path, delimiter=',')
@@ -38,7 +38,7 @@ def test_get_csv_files_empty_folder(tmp_path):
 @pytest.mark.django_db
 def test_cant_write_to_db():
     """
-    Тестируем будут ли сохранены старые данные в базе данных при неудачной попытке записать новые.
+    Тестируем останутся ли в базе данных старые данные при неудачной попытке записать новые.
     """
     path = Path('ascertain/csv_test_files/correct')
     #  Записываем корректные данные в БД.

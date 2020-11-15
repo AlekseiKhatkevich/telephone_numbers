@@ -13,6 +13,7 @@ class WhoIsOperatorDetailView(generics.RetrieveAPIView):
     Вью для возврата респонса с оператором определенным по MSISDN.
     get_object_or_404 не использовал так как хотел отдать кастомные сообщения об
     ошибках и не хотел делать кастомный exception handler из-за одного view.
+    Респонс данного вью кешируется в Редисе.
     """
     serializer_class = WhoIsOperatorSerializer
     model = serializer_class.Meta.model

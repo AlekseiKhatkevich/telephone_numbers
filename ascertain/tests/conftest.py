@@ -5,9 +5,6 @@ from django.http import QueryDict
 from psycopg2.extras import NumericRange
 
 
-#  pytest_plugins = ('celery.contrib.pytest', )
-
-
 @pytest.fixture(scope='function')
 def data_for_model() -> dict:
     """
@@ -24,17 +21,22 @@ def data_for_model() -> dict:
     return data
 
 
-@pytest.fixture(scope='module')
-def path_to_test_csv_folder() -> Path:
-    """
-    Возвращает путь до папки с тестовыми CSV файлами.
-    """
-    return Path(r'ascertain\tests\csv')
-
-
 @pytest.fixture(scope='function')
 def query_dict() -> QueryDict:
     """
     Возвращает "QueryDict"
     """
     return QueryDict(mutable=True)
+
+
+@pytest.fixture(scope='function')
+def dummy_cache(settings) -> None:
+    """
+    Устанавливает 'django.core.cache.backends.dummy.DummyCache' в качестве кэш бэкэнда.
+    """
+    DUMMY_CACHE = {
+        'default': {
+            'BACKEND': 'django.core.cache.backends.dummy.DummyCache',
+        }
+    }
+    settings.CACHES = DUMMY_CACHE
