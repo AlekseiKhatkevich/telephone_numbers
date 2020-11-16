@@ -8,13 +8,9 @@ from multiprocessing import cpu_count
 from django.conf import settings
 
 
-def max_workers():
-    return cpu_count()
-
-
 bind = '0.0.0.0:8000'
 backlog = 1000
-workers = max_workers()
+workers = cpu_count()
 worker_class = 'gthread'
 worker_connections = 1000
 timeout = 30
@@ -29,8 +25,7 @@ access_log_format = '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"
 
 proc_name = 'Gunicorn WSGI сервер в докере.'
 
-if settings.DEBUG:
-    reload = True
+reload = settings.DEBUG
 
 
 def worker_int(worker):

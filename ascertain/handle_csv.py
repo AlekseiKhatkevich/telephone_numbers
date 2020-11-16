@@ -196,7 +196,7 @@ class DownloadCSV:
 
     @staticmethod
     @sync_to_async
-    def async_logger(level, msg):
+    def async_logger(level: str, msg: str) -> Coroutine:
         """
         Псевдо-ассинхронный логгер.
         """
